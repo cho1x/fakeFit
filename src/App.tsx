@@ -12,6 +12,34 @@ import { downloadBlob, generateFitFile } from "@/lib/fit"
 import type { ActivityPreview, ExportPlan, RoutePoint } from "@/types/activity"
 
 const MAX_EXPORT_COUNT = 10
+const ROUTE_POINTS_STORAGE_KEY = "fit-generator:route-points"
+
+function isRoutePoint(value: unknown): value is RoutePoint {
+  if (!value || typeof value !== "object") return false
+
+  const point = value as Partial<RoutePoint>
+
+  return (
+    typeof point.lat === "number" &&
+    Number.isFinite(point.lat) &&
+    typeof point.lng === "number" &&
+    Number.isFinite(point.lng)
+  )
+}
+
+function loadStoredRoutePoints() {
+  try {
+    const raw = localStorage.getItem(ROUTE_POINTS_STORAGE_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter(isRoutePoint)
+  } catch {
+    return []
+  }
+}
 
 function toLocalInputValue(date: Date) {
   const tzOffset = date.getTimezoneOffset()
@@ -65,7 +93,9 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 export function App() {
-  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([])
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>(
+    loadStoredRoutePoints
+  )
   const [currentLocation, setCurrentLocation] = useState<RoutePoint | null>(
     null
   )
@@ -195,6 +225,10 @@ export function App() {
   }, [lapCount, routePoints])
 
   const liveSample = preview?.samples[playbackIndex]
+
+  useEffect(() => {
+    localStorage.setItem(ROUTE_POINTS_STORAGE_KEY, JSON.stringify(routePoints))
+  }, [routePoints])
 
   useEffect(() => {
     if (!preview?.samples.length) return undefined

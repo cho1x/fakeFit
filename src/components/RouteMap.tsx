@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import {
   ArrowCounterClockwiseIcon as RotateCcw,
   CrosshairIcon as LocateFixed,
@@ -58,6 +58,36 @@ function LocationFocus({ location }: { location: RoutePoint | null }) {
   return null
 }
 
+function InitialRouteFocus({ points }: { points: RoutePoint[] }) {
+  const map = useMap()
+  const hasFocusedRef = useRef(false)
+
+  useEffect(() => {
+    if (hasFocusedRef.current || !points.length) return
+
+    hasFocusedRef.current = true
+
+    if (points.length === 1) {
+      const [point] = points
+      map.setView([point.lat, point.lng], Math.max(map.getZoom(), 15), {
+        animate: false,
+      })
+      return
+    }
+
+    map.fitBounds(
+      points.map((point) => [point.lat, point.lng]),
+      {
+        animate: false,
+        maxZoom: 16,
+        padding: [32, 32],
+      }
+    )
+  }, [map, points])
+
+  return null
+}
+
 export function RouteMap({
   points,
   previewPoint,
@@ -87,6 +117,7 @@ export function RouteMap({
           onAddPoint={onAddPoint}
           onUndoLastPoint={onUndoLastPoint}
         />
+        <InitialRouteFocus points={points} />
         <LocationFocus location={currentLocation} />
         {points.length > 1 ? (
           <Polyline
