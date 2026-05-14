@@ -13,6 +13,7 @@ import type { ActivityPreview, ExportPlan, RoutePoint } from "@/types/activity"
 
 const MAX_EXPORT_COUNT = 10
 const ROUTE_POINTS_STORAGE_KEY = "fit-generator:route-points"
+const EXPORT_TIME_RANDOM_WINDOW_SECONDS = 15 * 60
 
 function isRoutePoint(value: unknown): value is RoutePoint {
   if (!value || typeof value !== "object") return false
@@ -45,30 +46,47 @@ function toLocalInputValue(date: Date) {
   const tzOffset = date.getTimezoneOffset()
   const local = new Date(date.getTime() - tzOffset * 60_000)
 
-  return local.toISOString().slice(0, 16)
+  return local.toISOString().slice(0, 19)
 }
 
-function addDaysToLocalInputValue(value: string, days: number) {
+function randomInteger(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function addDaysAndSecondsToLocalInputValue(
+  value: string,
+  days: number,
+  seconds: number
+) {
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
+  if (Number.isNaN(date.getTime())) return toLocalInputValue(new Date())
 
   date.setDate(date.getDate() + days)
+  date.setSeconds(date.getSeconds() + seconds)
 
   return toLocalInputValue(date)
 }
 
 function createExportPlan(
-  index: number,
-  baseStartTime = toLocalInputValue(new Date())
+  startTime = toLocalInputValue(new Date())
 ): ExportPlan {
-  const startTime = addDaysToLocalInputValue(baseStartTime, index)
-
   return {
     id: crypto.randomUUID(),
     startTime,
     paceMin: 6,
     paceSec: 0,
   }
+}
+
+function createRandomizedExportPlan(baseStartTime: string, dayOffset: number) {
+  const offsetSeconds = randomInteger(
+    -EXPORT_TIME_RANDOM_WINDOW_SECONDS,
+    EXPORT_TIME_RANDOM_WINDOW_SECONDS
+  )
+
+  return createExportPlan(
+    addDaysAndSecondsToLocalInputValue(baseStartTime, dayOffset, offsetSeconds)
+  )
 }
 
 function parsePaceSeconds(plan: ExportPlan) {
@@ -92,6 +110,22 @@ function isEditableTarget(target: EventTarget | null) {
   )
 }
 
+function rotateRoutePoints(points: RoutePoint[], startIndex: number) {
+  if (points.length < 2) return points
+
+  const normalizedIndex =
+    ((startIndex % points.length) + points.length) % points.length
+  if (normalizedIndex === 0) return points
+
+  return [...points.slice(normalizedIndex), ...points.slice(0, normalizedIndex)]
+}
+
+function createIndependentRoutePoints(points: RoutePoint[]) {
+  if (points.length < 2) return points
+
+  return rotateRoutePoints(points, randomInteger(0, points.length - 1))
+}
+
 export function App() {
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>(
     loadStoredRoutePoints
@@ -104,7 +138,7 @@ export function App() {
   const [hrMax, setHrMax] = useState(180)
   const [lapCount, setLapCount] = useState(1)
   const [exportPlans, setExportPlans] = useState<ExportPlan[]>(() => [
-    createExportPlan(0),
+    createExportPlan(),
   ])
   const [preview, setPreview] = useState<ActivityPreview | null>(null)
   const [playbackIndex, setPlaybackIndex] = useState(0)
@@ -196,7 +230,7 @@ export function App() {
       return [
         ...current,
         ...Array.from({ length: count - current.length }, (_, index) =>
-          createExportPlan(current.length + index, baseStartTime)
+          createRandomizedExportPlan(baseStartTime, current.length + index)
         ),
       ]
     })
@@ -322,7 +356,7 @@ export function App() {
 
         const { blob } = await generateFitFile({
           startTime,
-          points: routePoints,
+          points: createIndependentRoutePoints(routePoints),
           paceSecondsPerKm,
           hrRest,
           hrMax,

@@ -97,10 +97,9 @@ function buildLapPoints(
     const offsetLonMeters = radiusMeters * Math.sin(angle)
 
     for (const point of basePoints) {
-      const nextPoint =
-        withLapNoise && laps > 1
-          ? offsetPointMeters(point, offsetLatMeters, offsetLonMeters)
-          : point
+      const nextPoint = withLapNoise
+        ? offsetPointMeters(point, offsetLatMeters, offsetLonMeters)
+        : point
 
       allPoints.push(nextPoint)
     }
