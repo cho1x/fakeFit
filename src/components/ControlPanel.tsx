@@ -198,7 +198,7 @@ export function ControlPanel({
     <aside className="flex h-full min-h-0 w-full flex-col border-r bg-background lg:w-[420px]">
       <div className="border-b px-5 py-4">
         <h1 className="text-lg font-semibold tracking-normal text-foreground">
-          FIT 轨迹生成工具
+          FIT 数据生成工具
         </h1>
       </div>
 
