@@ -1,21 +1,38 @@
-# React + TypeScript + Vite + shadcn/ui
+# Fake FIT
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+<p align="center">
+  <strong>English</strong> | <a href="./README.zh-CN.md">中文</a>
+</p>
 
-## Adding components
+Generate realistic FIT running files from a custom route drawn on the map.
 
-To add components to your app, run the following command:
+![Fake FIT screenshot](./static/snapshot.png)
+
+## Features
+
+- Draw a route on the map and export one or more FIT files.
+- Customize start time, heart rate range, laps, and export count.
+- Automatically saves the route locally to avoid losing it after refresh.
+- Adds random timing, route start, path offset, speed, and heart-rate variation for more natural results.
+
+## Development
 
 ```bash
-npx shadcn@latest add button
+pnpm install
+pnpm run dev
 ```
 
-This will place the ui components in the `src/components` directory.
+## Build
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
+```bash
+pnpm run build
 ```
+
+## Credits
+
+- Built with React, Vite, shadcn/ui, Leaflet, Recharts, and Garmin FIT SDK.
+- Inspired in part by the tool shown in the Bilibili video [keep可用的校园跑数据生成工具](https://www.bilibili.com/video/BV1ZfqUBoEFL/).
+
+## License
+
+[MIT](./LICENSE)
